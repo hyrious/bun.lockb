@@ -1,0 +1,8 @@
+{
+  "include": ["src"],
+  "extends": "@hyrious/configs/tsconfig.casual.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "types": ["node"]
+  }
+}
