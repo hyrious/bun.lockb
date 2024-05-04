@@ -5,7 +5,7 @@ Parse and print `bun`'s binary lockfile `bun.lockb`.
 ## Usage
 
 ```js
-import { parse, print } from '@hyrious/bun.lockb'
+import { parse } from '@hyrious/bun.lockb'
 
 console.log(parse(fs.readFileSync('bun.lockb')))
 ```
