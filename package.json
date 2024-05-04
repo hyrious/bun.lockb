@@ -14,7 +14,9 @@
     "bun.lockb",
     "yarn.lock"
   ],
-  "bin": "dist/lockb-cli.js",
+  "bin": {
+    "lockb": "dist/lockb-cli.js"
+  },
   "main": "dist/lockb.js",
   "types": "dist/lockb.d.ts",
   "files": [
