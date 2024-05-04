@@ -2,6 +2,8 @@ import * as fs from 'node:fs'
 import * as dts from '@hyrious/dts'
 import * as esbuild from 'esbuild'
 
+fs.rmSync('dist', { recursive: true, force: true })
+
 esbuild.build({
   entryPoints: ["src/lockb.ts", "src/lockb-cli.ts"],
   bundle: true,

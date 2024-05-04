@@ -14,16 +14,21 @@
     "bun.lockb",
     "yarn.lock"
   ],
+  "bin": "dist/lockb-cli.js",
+  "main": "dist/lockb.js",
+  "types": "dist/lockb.d.ts",
   "files": [
+    "src",
     "dist",
-    "src"
+    "build.ts"
   ],
   "scripts": {
-    "build": "bun run build.ts"
+    "build": "esbuild-dev build.ts"
   },
   "devDependencies": {
     "@hyrious/configs": "^0.1.1",
     "@hyrious/dts": "^0.2.1",
+    "@hyrious/esbuild-dev": "^0.10.5",
     "@types/node": "^20.12.8",
     "esbuild": "^0.20.2"
   }
