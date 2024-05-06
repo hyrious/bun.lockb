@@ -230,6 +230,7 @@ export function parse(buf: Uint8Array | ArrayBuffer): string {
       } else if (commitish) {
         out += '#' + commitish
       }
+      return out
     }
     return ""
   }
