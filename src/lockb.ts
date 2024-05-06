@@ -163,17 +163,34 @@ export function parse(buf: Uint8Array | ArrayBuffer): string {
     single_file_module = 100,
   }
 
+  const is_scp = (s: string): boolean => {
+    if (s.length < 3) return false
+    let at = -1
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] === '@') {
+        if (at < 0) at = i
+      } else if (s[i] === ':') {
+        if (s.slice(i).startsWith('://')) return false
+        return at >= 0 ? i > at + 1 : i > 0
+      } else if (s[i] === '/') {
+        return at >= 0 && i > at + 1
+      }
+    }
+    return false
+  }
+
   const fmt_resolution = (a: Uint8Array): string => {
     if (a.byteLength < 64) throw new TypeError('resolution too short')
     const tag = a[0]
     const view = new DataView(a.buffer, a.byteOffset, a.byteLength)
     let pos = 8
-    if (tag === ResolutionTag.npm) { // url(string) + version
-      pos += 8
+    // url(string) + version
+    if (tag === ResolutionTag.npm) {
+      pos += 8 // skip string
       const major = view.getUint32((pos += 4) - 4, true)
       const minor = view.getUint32((pos += 4) - 4, true)
       const patch = view.getUint32((pos += 4) - 4, true)
-      pos += 4
+      pos += 4 // skip padding
       const version_tag = new Uint8Array(view.buffer, view.byteOffset + pos, 32)
       const pre = str(version_tag.subarray(0, 8))
       const build = str(version_tag.subarray(16, 24))
@@ -182,19 +199,49 @@ export function parse(buf: Uint8Array | ArrayBuffer): string {
       if (build) v += '+' + build
       return v
     }
-    // TODO: support other resolutions
+    // string
+    if (tag === ResolutionTag.folder || tag === ResolutionTag.local_tarball ||
+        tag === ResolutionTag.remote_tarball || tag === ResolutionTag.workspace ||
+        tag === ResolutionTag.symlink || tag === ResolutionTag.single_file_module) {
+      let v = str(new Uint8Array(view.buffer, view.byteOffset + pos, 8))
+      if (tag === ResolutionTag.workspace) v = `workspace:${v}`
+      if (tag === ResolutionTag.symlink) v = `link:${v}`
+      if (tag === ResolutionTag.single_file_module) v = `module:${v}`
+      return v
+    }
+    // owner(string) + repo(string) + commitish(SHA) + resolved(SHA) + package_name(string)
+    if (tag === ResolutionTag.git || tag === ResolutionTag.github || tag === ResolutionTag.gitlab) {
+      let out = tag === ResolutionTag.git ? 'git+' : tag === ResolutionTag.github ? 'github:' : 'gitlab:'
+      let owner = str(new Uint8Array(view.buffer, view.byteOffset + pos, 8))
+      let repo = str(new Uint8Array(view.buffer, view.byteOffset + pos + 8, 8))
+      if (owner) out += owner + '/'
+      else if (is_scp(repo)) out += 'ssh://'
+      out += repo
+      pos += 16
+      let commitish = str(new Uint8Array(view.buffer, view.byteOffset + pos, 8))
+      let resolved = str(new Uint8Array(view.buffer, view.byteOffset + pos + 8, 8))
+      if (resolved) {
+        out += '#'
+        let i = -1
+        if ((i = resolved.lastIndexOf('-')) >= 0) {
+          resolved = resolved.slice(i + 1)
+        }
+        out += resolved
+      } else if (commitish) {
+        out += '#' + commitish
+      }
+    }
     return ""
   }
 
   const fmt_url = (a: Uint8Array): string => {
     if (a.byteLength < 64) throw new TypeError('resolution too short')
-    const tag = a[0]
-    const view = new DataView(a.buffer, a.byteOffset, a.byteLength)
-    if (tag === ResolutionTag.npm) { // url(string) + version
-      return str(new Uint8Array(view.buffer, view.byteOffset + 8, 8))
+    // url(string) + version
+    if (a[0] === ResolutionTag.npm) {
+      return str(new Uint8Array(a.buffer, a.byteOffset + 8, 8))
+    } else {
+      return fmt_resolution(a)
     }
-    // TODO: support other resolutions
-    return ""
   }
 
   const slice = (data: Uint8Array, a: Uint8Array, item: number): Uint8Array[] => {
@@ -261,10 +308,10 @@ export function parse(buf: Uint8Array | ArrayBuffer): string {
   ]
 
   const order = Array.from({ length: list_len }, (_, i) => i).slice(1).sort((a, b) => {
-    a = packages[a]
-    b = packages[b]
-    return str(a.name).localeCompare(str(b.name)) ||
-      fmt_resolution(a.resolution).localeCompare(fmt_resolution(b.resolution))
+    const pa = packages[a]
+    const pb = packages[b]
+    return str(pa.name).localeCompare(str(pb.name)) ||
+      fmt_resolution(pa.resolution).localeCompare(fmt_resolution(pb.resolution))
   })
 
   for (const i of order) {
