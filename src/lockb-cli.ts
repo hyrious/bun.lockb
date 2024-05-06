@@ -23,4 +23,4 @@ if (process.argv[2]?.toLowerCase() === "-v") {
 const file = process.argv[2] || "bun.lockb";
 const buffer = readFileSync(file);
 const lockfile = parse(buffer);
-console.log(lockfile);
+process.stdout.write(lockfile);

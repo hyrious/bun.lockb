@@ -145,7 +145,7 @@ export function parse(buf: Uint8Array | ArrayBuffer): string {
     let hash = ''
     for (let i = 0; i < 32; i++) {
       let c = hex(a[i])
-      if (i < 8) c = c.toUpperCase()
+      if (i < 8 || 16 <= i && i < 24) c = c.toUpperCase()
       hash += c
       if (i < 31 && (i + 1) % 8 === 0) hash += '-'
     }
@@ -235,14 +235,14 @@ export function parse(buf: Uint8Array | ArrayBuffer): string {
 
   const quote = (s: string): string => {
     if (s.startsWith('true') || s.startsWith('false') ||
-        /[:\s\n\\",\[\]]/g.test(s) || /^[0-9]/g.test(s) || !/^[a-zA-Z]/g.test(s))
+        /[:\s\n\\",\[\]|\t!]/g.test(s) || /^[0-9]/g.test(s) || !/^[a-zA-Z]/g.test(s))
       return JSON.stringify(s)
     else
       return s
   }
-
   const fmt_specs = (name: string, specs: string[], version: string): string => {
     specs = Array.from(new Set(specs.map(e => e || `^${version}`)))
+    specs.sort((a, b) => a.localeCompare(b))
     let out = '', comma = false
     for (const spec of specs) {
       const item = name + '@' + spec
@@ -260,7 +260,14 @@ export function parse(buf: Uint8Array | ArrayBuffer): string {
     '',
   ]
 
-  for (let i = 1; i < list_len; i++) {
+  const order = Array.from({ length: list_len }, (_, i) => i).slice(1).sort((a, b) => {
+    a = packages[a]
+    b = packages[b]
+    return str(a.name).localeCompare(str(b.name)) ||
+      fmt_resolution(a.resolution).localeCompare(fmt_resolution(b.resolution))
+  })
+
+  for (const i of order) {
     const a = packages[i]
     const name = str(a.name)
     const resolution = a.resolution
