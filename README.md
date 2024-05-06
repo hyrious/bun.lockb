@@ -1,6 +1,6 @@
 # @hyrious/bun.lockb
 
-Parse and print `bun`'s binary lockfile `bun.lockb`.
+Parse and print `bun`'s binary lockfile `bun.lockb`. [Try it online.](https://hyrious.me/tool/bun.lockb)
 
 ## Usage
 
