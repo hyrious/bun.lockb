@@ -7,7 +7,7 @@ if (process.argv[2] === "-h" || process.argv[2] === "--help") {
   console.log("    Parse and print bun.lockb in text format");
   console.log();
   console.log("  Usage");
-  console.log("    $ npx @hyrious/lockb [bun.lockb]");
+  console.log("    $ npx @hyrious/bun.lockb [bun.lockb]");
   console.log();
   process.exit(0);
 }
